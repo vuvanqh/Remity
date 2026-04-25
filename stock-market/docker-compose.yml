@@ -1,0 +1,40 @@
+services:
+  #db
+  db: 
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: stock-market-db
+    env_file:
+      - .env
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${DB_PASSWORD}
+
+    volumes:
+      - mssql-data:/var/opt/mssql
+      - ./init:/init
+
+    ports:
+      - "${DB_PORT}:1433"
+    command: /bin/bash /init/init-db.sh
+
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/1433'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  api:
+    build: .
+    container_name: stock-market-api
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 1433
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mssql-data:

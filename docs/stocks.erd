@@ -4,8 +4,8 @@
   "settings": {
     "width": 2000,
     "height": 2000,
-    "scrollTop": -17.0002,
-    "scrollLeft": -48.6526,
+    "scrollTop": -36.1669,
+    "scrollLeft": -579.1667,
     "zoomLevel": 1,
     "show": 431,
     "database": 2,
@@ -138,7 +138,8 @@
           "kWCyhtgwRHLc_tXcpkJgY",
           "bQ3Wru8dF6y-ORIhP9S4r",
           "IzbC-eARNut1ZfuT0kv8U",
-          "MErwT-Xi-9HDx18r9fszV"
+          "MErwT-Xi-9HDx18r9fszV",
+          "URWanlwTFeKy9tlXBxoCA"
         ],
         "seqColumnIds": [
           "kWCyhtgwRHLc_tXcpkJgY",
@@ -150,18 +151,19 @@
           "IzbC-eARNut1ZfuT0kv8U",
           "MErwT-Xi-9HDx18r9fszV",
           "-kPg_X21h2wTQSAYofOAx",
-          "vvD0G_GmhDX1sX3ragOZs"
+          "vvD0G_GmhDX1sX3ragOZs",
+          "URWanlwTFeKy9tlXBxoCA"
         ],
         "ui": {
-          "x": 952.7628,
-          "y": 292.3878,
+          "x": 978.7628,
+          "y": 271.3878,
           "zIndex": 58,
           "widthName": 60,
           "widthComment": 60,
           "color": ""
         },
         "meta": {
-          "updateAt": 1777144932884,
+          "updateAt": 1777151231126,
           "createAt": 1777144183655
         }
       }
@@ -390,20 +392,20 @@
       "MErwT-Xi-9HDx18r9fszV": {
         "id": "MErwT-Xi-9HDx18r9fszV",
         "tableId": "CYm5wxUH3Y0ysO1fvoSn0",
-        "name": "operationType",
+        "name": "action",
         "comment": "buy/sell",
         "dataType": "varchar",
         "default": "",
         "options": 8,
         "ui": {
           "keys": 0,
-          "widthName": 78,
+          "widthName": 60,
           "widthComment": 60,
           "widthDataType": 60,
           "widthDefault": 60
         },
         "meta": {
-          "updateAt": 1777144350701,
+          "updateAt": 1777151094699,
           "createAt": 1777144335079
         }
       },
@@ -545,6 +547,26 @@
         "meta": {
           "updateAt": 1777144773480,
           "createAt": 1777144760044
+        }
+      },
+      "URWanlwTFeKy9tlXBxoCA": {
+        "id": "URWanlwTFeKy9tlXBxoCA",
+        "tableId": "CYm5wxUH3Y0ysO1fvoSn0",
+        "name": "createdAt",
+        "comment": "",
+        "dataType": "datetime",
+        "default": "",
+        "options": 8,
+        "ui": {
+          "keys": 0,
+          "widthName": 60,
+          "widthComment": 60,
+          "widthDataType": 60,
+          "widthDefault": 60
+        },
+        "meta": {
+          "updateAt": 1777151225186,
+          "createAt": 1777151218297
         }
       }
     },
@@ -710,8 +732,8 @@
           "columnIds": [
             "IzbC-eARNut1ZfuT0kv8U"
           ],
-          "x": 952.7628,
-          "y": 330.3878,
+          "x": 978.7628,
+          "y": 315.3878,
           "direction": 1
         },
         "meta": {
@@ -738,8 +760,8 @@
           "columnIds": [
             "bQ3Wru8dF6y-ORIhP9S4r"
           ],
-          "x": 952.7628,
-          "y": 406.3878,
+          "x": 978.7628,
+          "y": 403.3878,
           "direction": 1
         },
         "meta": {
@@ -755,7 +777,7 @@
         "id": "uygMpO_eBIkr3EI_As4fd",
         "value": "Constraints:\n- operationType IN ('buy','sell')\n\nRules:\n- Append only\n- Successful operations only\n- Ordered by identity id",
         "ui": {
-          "x": 1127.5826,
+          "x": 1132.5826,
           "y": 462.3577,
           "zIndex": 133,
           "width": 221,
@@ -763,7 +785,7 @@
           "color": ""
         },
         "meta": {
-          "updateAt": 1777144930085,
+          "updateAt": 1777151232818,
           "createAt": 1777144867360
         }
       },

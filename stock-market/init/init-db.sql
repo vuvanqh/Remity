@@ -1,0 +1,5 @@
+IF DB_ID('StockMarketDB') IS NULL
+BEGIN
+    CREATE DATABASE StockMarketDB;
+END
+GO

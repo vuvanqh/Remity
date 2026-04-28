@@ -1,17 +1,15 @@
 import 'dotenv/config'
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { db } from './database/kysely.provider';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await db
-  .selectFrom('stocks')
-  .selectAll()
-  .execute()
-
-  console.log('Database connected')
-
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+  }));
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

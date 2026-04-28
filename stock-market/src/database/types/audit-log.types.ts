@@ -8,7 +8,7 @@ import {
 
 export interface AuditLogsTable {
     id: Generated<number>
-    action: "buy" | "sell"
+    type: "buy" | "sell"
     walletId: string
     stockName: string
     createdAt: ColumnType<Date, Date, never>

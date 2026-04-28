@@ -6,7 +6,7 @@ import {
 
 export interface StocksTable {
     name: string
-    availableQuantity: number
+    quantity: number
 }
 
 export type Stock = Selectable<StocksTable>;

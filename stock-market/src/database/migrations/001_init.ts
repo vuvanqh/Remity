@@ -21,7 +21,7 @@ export async function up(db: Kysely<any>) {
     .addColumn('name', 'varchar(255)', col =>
       col.primaryKey()
     )
-    .addColumn('availableQuantity', 'integer', col =>
+    .addColumn('quantity', 'integer', col =>
       col.notNull()
     )
     .execute()

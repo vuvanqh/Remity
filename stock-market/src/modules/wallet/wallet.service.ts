@@ -4,7 +4,7 @@ import { StockRepository } from "../stock/stock.repository";
 import { db } from "../../database/kysely.provider";
 import { WalletResponse } from "./dtos/walletResponse"; 
 import { TradePolicy } from "./policies/trade.policy";
-
+import { AuditLogRepository } from "../audit-logs/audit-log.repository";
 
 @Injectable()
 export class WalletService {
@@ -12,6 +12,7 @@ export class WalletService {
         private readonly walletRepository: WalletRepository,
         private readonly stockRepository: StockRepository,
         private readonly tradePolicy: TradePolicy,
+        private readonly auditLogRepository: AuditLogRepository,
     ) {}
 
     public getWalletStocks = async (walletId: string): Promise<WalletResponse> => {
@@ -38,7 +39,6 @@ export class WalletService {
 
     }
 
-    //TODO: Add audit logging for buy and sell stock and locks on buy/sell and setStock
     public async buyStock(walletId: string, stockName: string): Promise<void> {
         await db.transaction().execute(async trx => {
             const stock = await this.stockRepository.findStockByNameAsync(stockName, trx);
@@ -66,6 +66,11 @@ export class WalletService {
             
 
             await this.stockRepository.updateStockQuantity(stockName, stock!.quantity - 1, trx);
+            await this.auditLogRepository.createAuditLog({
+                type: "buy",
+                walletId,
+                stockName
+            }, trx);
         });
     }
 
@@ -87,6 +92,12 @@ export class WalletService {
             }, trx);
 
             await this.stockRepository.updateStockQuantity(stockName, stock!.quantity + 1, trx);
+            await this.auditLogRepository.createAuditLog({
+                type: "sell",
+                walletId,
+                stockName,
+                createdAt: new Date(),
+            }, trx);
         });
     }
 }

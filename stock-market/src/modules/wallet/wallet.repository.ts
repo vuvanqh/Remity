@@ -35,8 +35,7 @@ export class WalletRepository {
         await exec
         .insertInto('wallets')
         .values({
-            id: id,
-            createdAt: new Date(),
+            id: id
         })
         .execute();
     }

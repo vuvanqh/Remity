@@ -11,6 +11,7 @@ import { WalletService } from './wallet.service'
 import { WalletRepository } from './wallet.repository'
 import { StockRepository } from '../stock/stock.repository'
 import { TradePolicy } from './policies/trade.policy'
+import { AuditLogRepository } from '../audit-logs/audit-log.repository'
 
 type Mocked<T> = {
   [P in keyof T]: T[P] extends (...args: infer A) => infer R ? jest.Mock<Promise<Awaited<R>>, A> : jest.Mock<any, any>
@@ -21,6 +22,7 @@ describe('WalletService', () => {
     let walletRepository: Mocked<WalletRepository>
     let stockRepository: Mocked<StockRepository>
     let tradePolicy: Mocked<TradePolicy>
+    let auditLogRepository: Mocked<AuditLogRepository>
     let executeMock: jest.Mock
 
     beforeEach(() => {
@@ -43,9 +45,13 @@ describe('WalletService', () => {
             ensureSellAllowed: jest.fn(),
         } as unknown as Mocked<TradePolicy>
 
+        auditLogRepository = {
+            createAuditLog: jest.fn(),
+        } as unknown as Mocked<AuditLogRepository>
+
         executeMock = jest.fn(async callback => callback({} as any));
         (db.transaction as jest.Mock) = jest.fn().mockReturnValue({ execute: executeMock });
-        service = new WalletService(walletRepository, stockRepository, tradePolicy)
+        service = new WalletService(walletRepository, stockRepository, tradePolicy, auditLogRepository)
     })
 
     afterEach(() => {
@@ -118,6 +124,11 @@ describe('WalletService', () => {
              },trx)
             expect(stockRepository.updateStockQuantity).toHaveBeenCalledWith('stock1', 0, trx)
             expect(tradePolicy.ensureBuyAllowed).toHaveBeenCalledWith({ name: 'stock1', quantity: 1 })
+            expect(auditLogRepository.createAuditLog).toHaveBeenCalledWith({
+                type: 'buy',
+                walletId: 'wallet1',
+                stockName: 'stock1',
+            }, trx)
         })
 
         it('inserts wallet stock when wallet exists but stock is not yet in wallet', async () => {
@@ -137,6 +148,11 @@ describe('WalletService', () => {
             },trx)
             expect(walletRepository.updateWalletStock).not.toHaveBeenCalled()
             expect(stockRepository.updateStockQuantity).toHaveBeenCalledWith('stock1', 1, trx)
+            expect(auditLogRepository.createAuditLog).toHaveBeenCalledWith({
+                type: 'buy',
+                walletId: 'wallet1',
+                stockName: 'stock1',
+            }, trx)
         })
 
         it('updates existing wallet stock when wallet exists', async () => {
@@ -155,6 +171,11 @@ describe('WalletService', () => {
                 quantity: 4 
             },trx,)
             expect(stockRepository.updateStockQuantity).toHaveBeenCalledWith('stock1', 4, trx)
+            expect(auditLogRepository.createAuditLog).toHaveBeenCalledWith({
+                type: 'buy',
+                walletId: 'wallet1',
+                stockName: 'stock1',
+            }, trx)
         })
 
         it('propagates trade policy errors during buy', async () => {
@@ -166,6 +187,7 @@ describe('WalletService', () => {
             await expect(service.buyStock('wallet1', 'stock1')).rejects.toThrow(NotFoundException)
             expect(walletRepository.createWallet).not.toHaveBeenCalled()
             expect(stockRepository.updateStockQuantity).not.toHaveBeenCalled()
+            expect(auditLogRepository.createAuditLog).not.toHaveBeenCalled()
         })
     })
 
@@ -186,6 +208,12 @@ describe('WalletService', () => {
                 quantity: 1 
             },trx)
             expect(stockRepository.updateStockQuantity).toHaveBeenCalledWith('stock1', 8, trx)
+            expect(auditLogRepository.createAuditLog).toHaveBeenCalledWith({
+                type: 'sell',
+                walletId: 'wallet1',
+                stockName: 'stock1',
+                createdAt: expect.any(Date),
+            }, trx)
         })
 
         it('throws NotFoundException when wallet is missing', async () => {
@@ -196,6 +224,7 @@ describe('WalletService', () => {
             await expect(service.sellStock('wallet1', 'stock1')).rejects.toThrow(NotFoundException)
             expect(walletRepository.updateWalletStock).not.toHaveBeenCalled()
             expect(stockRepository.updateStockQuantity).not.toHaveBeenCalled()
+            expect(auditLogRepository.createAuditLog).not.toHaveBeenCalled()
         })
 
         it('propagates trade policy errors during sell', async () => {
@@ -209,6 +238,7 @@ describe('WalletService', () => {
             expect(walletRepository.findWalletById).not.toHaveBeenCalled()
             expect(walletRepository.updateWalletStock).not.toHaveBeenCalled()
             expect(stockRepository.updateStockQuantity).not.toHaveBeenCalled()
+            expect(auditLogRepository.createAuditLog).not.toHaveBeenCalled()
         })
     })
 })

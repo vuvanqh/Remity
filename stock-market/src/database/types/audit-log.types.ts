@@ -11,7 +11,7 @@ export interface AuditLogsTable {
     type: "buy" | "sell"
     walletId: string
     stockName: string
-    createdAt: ColumnType<Date, Date, never>
+    createdAt: ColumnType<Date, Date | undefined, never>
 }
 
 export type AuditLog = Selectable<AuditLogsTable>;

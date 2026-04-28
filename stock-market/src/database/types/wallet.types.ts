@@ -7,7 +7,7 @@ import {
 
 export interface WalletsTable {
     id: string
-    createdAt: ColumnType<Date, Date, never>
+    createdAt: ColumnType<Date, Date | undefined, never>
 }
 
 export type Wallet = Selectable<WalletsTable>;

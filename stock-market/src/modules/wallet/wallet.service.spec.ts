@@ -14,23 +14,28 @@ import { WalletService } from './wallet.service'
 import { WalletRepository } from './wallet.repository'
 import { StockRepository } from '../stock/stock.repository'
 import { AuditLogRepository } from '../audit-logs/audit-log.repository'
+import { WalletStockRepository } from '../wallet-stock/wallet-stock.repository'
 
 describe('WalletService', () => {
     let service: WalletService
     let walletRepository: jest.Mocked<WalletRepository>
     let stockRepository: jest.Mocked<StockRepository>
     let auditLogRepository: jest.Mocked<AuditLogRepository>
+    let walletStockRepository: jest.Mocked<WalletStockRepository>
     let executeMock: jest.Mock
 
     beforeEach(() => {
         walletRepository = {
             findWalletById: jest.fn(),
+            createWallet: jest.fn(),
+        } as unknown as jest.Mocked<WalletRepository>
+
+        walletStockRepository = {
             getWalletStocks: jest.fn(),
             getWalletStockQuantity: jest.fn(),
-            createWallet: jest.fn(),
             incrementWalletStock: jest.fn(),
             decrementWalletStock: jest.fn(),
-        } as unknown as jest.Mocked<WalletRepository>
+        } as unknown as jest.Mocked<WalletStockRepository>
 
         stockRepository = {
             incrementStockQuantity: jest.fn(),
@@ -42,7 +47,7 @@ describe('WalletService', () => {
         } as unknown as jest.Mocked<AuditLogRepository>
 
         executeMock = (db.transaction as jest.Mock)().execute
-        service = new WalletService(walletRepository, stockRepository, auditLogRepository)
+        service = new WalletService(walletRepository, stockRepository, auditLogRepository, walletStockRepository)
     })
 
     afterEach(() => {
@@ -52,7 +57,7 @@ describe('WalletService', () => {
     describe('getWalletStocks', () => {
         it('returns wallet stocks when wallet exists', async () => {
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
-            walletRepository.getWalletStocks.mockResolvedValueOnce([
+            walletStockRepository.getWalletStocks.mockResolvedValueOnce([
                 { wallet_id: 'wallet1', stock_name: 'stock1', quantity: 10 },
             ] as any)
 
@@ -63,29 +68,29 @@ describe('WalletService', () => {
                 stocks: [{ name: 'stock1', quantity: 10 }],
             })
             expect(walletRepository.findWalletById).toHaveBeenCalledWith('wallet1')
-            expect(walletRepository.getWalletStocks).toHaveBeenCalledWith('wallet1')
+            expect(walletStockRepository.getWalletStocks).toHaveBeenCalledWith('wallet1')
         })
 
         it('throws NotFoundException when wallet is not found', async () => {
             walletRepository.findWalletById.mockResolvedValueOnce(undefined)
 
             await expect(service.getWalletStocks('wallet1')).rejects.toThrow(NotFoundException)
-            expect(walletRepository.getWalletStocks).not.toHaveBeenCalled()
+            expect(walletStockRepository.getWalletStocks).not.toHaveBeenCalled()
         })
     })
 
     describe('getWalletStockQuantity', () => {
         it('returns wallet stock quantity when wallet exists', async () => {
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
-            walletRepository.getWalletStockQuantity.mockResolvedValueOnce(10)
+            walletStockRepository.getWalletStockQuantity.mockResolvedValueOnce(10)
 
             await expect(service.getWalletStockQuantity('wallet1', 'stock1')).resolves.toBe(10)
-            expect(walletRepository.getWalletStockQuantity).toHaveBeenCalledWith('wallet1', 'stock1')
+            expect(walletStockRepository.getWalletStockQuantity).toHaveBeenCalledWith('wallet1', 'stock1')
         })
 
         it('returns 0 when wallet stock quantity is undefined', async () => {
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
-            walletRepository.getWalletStockQuantity.mockResolvedValueOnce(undefined)
+            walletStockRepository.getWalletStockQuantity.mockResolvedValueOnce(undefined)
 
             await expect(service.getWalletStockQuantity('wallet1', 'stock1')).resolves.toBe(0)
         })
@@ -107,7 +112,7 @@ describe('WalletService', () => {
             await service.buyStock('wallet1', 'stock1')
 
             expect(walletRepository.createWallet).toHaveBeenCalledWith('wallet1', trx)
-            expect(walletRepository.incrementWalletStock).toHaveBeenCalledWith('wallet1', 'stock1', trx)
+            expect(walletStockRepository.incrementWalletStock).toHaveBeenCalledWith('wallet1', 'stock1', trx)
             expect(stockRepository.decrementStockQuantity).toHaveBeenCalledWith('stock1', trx)
             expect(auditLogRepository.createAuditLog).toHaveBeenCalledWith({
                 type: 'buy',
@@ -125,7 +130,7 @@ describe('WalletService', () => {
             await service.buyStock('wallet1', 'stock1')
 
             expect(walletRepository.createWallet).not.toHaveBeenCalled()
-            expect(walletRepository.incrementWalletStock).toHaveBeenCalledWith('wallet1', 'stock1', trx)
+            expect(walletStockRepository.incrementWalletStock).toHaveBeenCalledWith('wallet1', 'stock1', trx)
             expect(stockRepository.decrementStockQuantity).toHaveBeenCalledWith('stock1', trx)
             expect(auditLogRepository.createAuditLog).toHaveBeenCalledWith({
                 type: 'buy',
@@ -141,7 +146,7 @@ describe('WalletService', () => {
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
 
             await expect(service.buyStock('wallet1', 'stock1')).rejects.toThrow(NotFoundException)
-            expect(walletRepository.incrementWalletStock).not.toHaveBeenCalled()
+            expect(walletStockRepository.incrementWalletStock).not.toHaveBeenCalled()
         })
 
         it('throws BadRequestException when stock is not available', async () => {
@@ -151,7 +156,7 @@ describe('WalletService', () => {
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
 
             await expect(service.buyStock('wallet1', 'stock1')).rejects.toThrow(BadRequestException)
-            expect(walletRepository.incrementWalletStock).not.toHaveBeenCalled()
+            expect(walletStockRepository.incrementWalletStock).not.toHaveBeenCalled()
         })
     })
 
@@ -160,12 +165,12 @@ describe('WalletService', () => {
             const trx = {}
             executeMock.mockImplementationOnce(async callback => callback(trx))
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
-            walletRepository.decrementWalletStock.mockResolvedValueOnce(1)
+            walletStockRepository.decrementWalletStock.mockResolvedValueOnce(1)
             stockRepository.incrementStockQuantity.mockResolvedValueOnce(1)
 
             await service.sellStock('wallet1', 'stock1')
 
-            expect(walletRepository.decrementWalletStock).toHaveBeenCalledWith('wallet1', 'stock1', trx)
+            expect(walletStockRepository.decrementWalletStock).toHaveBeenCalledWith('wallet1', 'stock1', trx)
             expect(stockRepository.incrementStockQuantity).toHaveBeenCalledWith('stock1', trx)
             expect(auditLogRepository.createAuditLog).toHaveBeenCalledWith({
                 type: 'sell',
@@ -181,14 +186,14 @@ describe('WalletService', () => {
 
             await expect(service.sellStock('wallet1', 'stock1')).rejects.toThrow(BadRequestException)
             expect(walletRepository.createWallet).toHaveBeenCalledWith('wallet1', trx)
-            expect(walletRepository.decrementWalletStock).not.toHaveBeenCalled()
+            expect(walletStockRepository.decrementWalletStock).not.toHaveBeenCalled()
         })
 
         it('throws BadRequestException when wallet does not have enough stock', async () => {
             const trx = {}
             executeMock.mockImplementationOnce(async callback => callback(trx))
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
-            walletRepository.decrementWalletStock.mockResolvedValueOnce(0)
+            walletStockRepository.decrementWalletStock.mockResolvedValueOnce(0)
 
             await expect(service.sellStock('wallet1', 'stock1')).rejects.toThrow(BadRequestException)
             expect(stockRepository.incrementStockQuantity).not.toHaveBeenCalled()
@@ -198,7 +203,7 @@ describe('WalletService', () => {
             const trx = {}
             executeMock.mockImplementationOnce(async callback => callback(trx))
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
-            walletRepository.decrementWalletStock.mockResolvedValueOnce(1)
+            walletStockRepository.decrementWalletStock.mockResolvedValueOnce(1)
             stockRepository.incrementStockQuantity.mockResolvedValueOnce(0)
 
             await expect(service.sellStock('wallet1', 'stock1')).rejects.toThrow(NotFoundException)

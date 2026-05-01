@@ -5,11 +5,11 @@ import { WalletService } from "./wallet.service";
 import { StockModule } from "../stock/stock.module";
 import { TradePolicy } from "./policies/trade.policy";
 import { AuditLogsModule } from "../audit-logs/audit-log.module";
-
+import { WalletStockModule } from "../wallet-stock/wallet-stock.module";
 
 @Module({
     controllers: [WalletController],
     providers: [WalletRepository, WalletService, TradePolicy],
-    imports: [StockModule, AuditLogsModule],
+    imports: [StockModule, AuditLogsModule, WalletStockModule],
 })
 export class WalletModule{}

@@ -19,6 +19,10 @@ The application is containerized and started via a single command.
 
 ### Start Command
 
+The application provides separate startup scripts for different operating systems to ensure compatibility.
+
+#### Linux / macOS
+
 ```bash
 ./start.sh <PORT> [INSTANCES]
 ```
@@ -28,6 +32,19 @@ Examples:
 ```bash
 ./start.sh 4000 3
 ./start.sh 5000
+```
+
+#### Windows
+
+```bat
+start.bat <PORT> [INSTANCES]
+```
+
+Examples:
+
+```bash
+./start.bat 4000 3
+./start.bat 5000
 ```
 
 This will:
@@ -56,6 +73,16 @@ Defaults:
 - `INSTANCES = 2`
 
 The number of instances is always enforced to be at least 2 to satisfy high availability requirements.
+
+#### Notes
+
+- Both .sh and .bat scripts perform the same actions:
+  - build containers
+  - start the database
+  - run migrations
+  - start and scale API instances
+- No additional tools (e.g. WSL) are required on Windows
+- Docker must be installed and available in the system PATH
 
 ---
 

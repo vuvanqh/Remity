@@ -20,13 +20,14 @@ The application is containerized and started via a single command.
 ### Start Command
 
 ```bash
-./start.sh <PORT>
+./start.sh <PORT> [INSTANCES]
 ```
 
-Example:
+Examples:
 
 ```bash
-./start.sh 4000
+./start.sh 4000 3
+./start.sh 5000
 ```
 
 This will:
@@ -35,6 +36,7 @@ This will:
 - start the database
 - run migrations
 - start the API service
+- scale API instances (minimum 2)
 
 The service will be available at:
 
@@ -42,11 +44,18 @@ The service will be available at:
 http://localhost:<PORT>
 ```
 
-If no port is provided, a default value is used.
+If no arguments are provided:
 
 ```bash
 ./start.sh
 ```
+
+Defaults:
+
+- `PORT = 3000`
+- `INSTANCES = 2`
+
+The number of instances is always enforced to be at least 2 to satisfy high availability requirements.
 
 ---
 
@@ -54,16 +63,18 @@ If no port is provided, a default value is used.
 
 Runtime configuration is managed via environment variables.
 
-The `PORT` can be overridden at startup, but also has a default defined in `.env`.
+The `PORT` can be overridden at startup via `./start.sh <PORT>`, while `.env` provides defaults.
 
-Example `docker-compose.yml`:
+Example `docker-compose.yml` (effective setup):
 
 ```yaml
 services:
-  api:
+  nginx:
     ports:
       - "${PORT:-3000}:3000"
 ```
+
+Note: The API service does **not** expose ports directly when running multiple replicas.
 
 ---
 
@@ -148,11 +159,44 @@ This document explains:
 
 ## High Availability
 
-The service is stateless and relies on a shared database.
+The system achieves high availability through horizontal replication of stateless API instances and a reverse proxy.
 
-- multiple instances can run simultaneously
-- `/chaos` terminates only a single instance
-- other instances continue serving traffic
+### Architecture
+
+```
+client → localhost:<PORT> → nginx → api (multiple replicas)
+```
+
+### Key Properties
+
+- multiple API instances are started using Docker Compose scaling
+- nginx acts as a single entrypoint and distributes traffic
+- `/chaos` terminates only one instance
+- Docker restart policy ensures the instance is restarted automatically
+- other instances continue serving traffic during failure
+
+### Implementation Notes
+
+- API containers are scaled via:
+
+```bash
+docker-compose up --build --scale api=<INSTANCES>
+```
+
+- The startup script enforces a minimum of 2 instances
+- API containers do not expose ports directly
+- nginx is the only externally exposed service
+- service discovery is handled via Docker internal DNS (`api` resolves to replicas)
+
+- API containers do not expose ports directly
+- nginx is the only externally exposed service
+- service discovery is handled via Docker internal DNS (`api` resolves to replicas)
+
+This setup provides:
+
+- fault tolerance (instance-level)
+- basic self-healing (via restart policy)
+- a stable external interface (`localhost:<PORT>`)
 
 ---
 

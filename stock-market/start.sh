@@ -1,7 +1,12 @@
 #!/bin/bash
 
 PORT=${1:-3000}
+INSTANCES=${2:-2}
 
-echo "Starting application on port $PORT"
+if [ "$INSTANCES" -lt 2 ]; then
+  INSTANCES=2
+fi
 
-PORT=$PORT docker-compose up --build
+echo "Starting application on port $PORT with $INSTANCES instances"
+
+PORT=$PORT docker-compose up --build --scale api=$INSTANCES

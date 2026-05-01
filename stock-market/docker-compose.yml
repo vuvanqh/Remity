@@ -24,17 +24,24 @@ services:
       retries: 10
   api:
     build: .
-    container_name: stock-market-api
     env_file:
       - .env
     environment:
       DB_HOST: db
       DB_PORT: 1433
-    ports:
-      - "{PORT:-3000}:3000"
     depends_on:
       db:
         condition: service_healthy
+    restart: always
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - api
 
 volumes:
   mssql-data:

@@ -9,8 +9,8 @@ import {
 export interface AuditLogsTable {
     id: Generated<number>
     type: "buy" | "sell"
-    walletId: string
-    stockName: string
+    wallet_id: string
+    stock_name: string
     createdAt: ColumnType<Date, Date | undefined, never>
 }
 

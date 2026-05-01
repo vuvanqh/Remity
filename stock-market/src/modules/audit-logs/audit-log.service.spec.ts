@@ -3,7 +3,13 @@ import { AuditLogRepository } from './audit-log.repository'
 import { db } from '../../database/kysely.provider'
 
 jest.mock('../../database/kysely.provider', () => ({
-  db: {},
+  db: {
+    transaction: jest.fn().mockReturnValue({
+      setAccessMode: jest.fn().mockReturnThis(),
+      setIsolationLevel: jest.fn().mockReturnThis(),
+      execute: jest.fn(async (callback) => callback({})),
+    }),
+  },
 }))
 
 describe('AuditLogService', () => {
@@ -26,15 +32,15 @@ describe('AuditLogService', () => {
     describe('getAuditLogs', () => {
         it('returns audit logs from repository', async () => {
         const mockLogs = [
-            { id: 1, type: 'buy', walletId: 'wallet-1', stockName: 'ABC', createdAt: new Date() },
-            { id: 2, type: 'sell', walletId: 'wallet-1', stockName: 'ABC', createdAt: new Date() },
+            { id: 1, type: 'buy', wallet_id: 'wallet-1', stock_name: 'ABC', createdAt: new Date() },
+            { id: 2, type: 'sell', wallet_id: 'wallet-1', stock_name: 'ABC', createdAt: new Date() },
         ]
         auditLogRepository.getAuditLogs.mockResolvedValueOnce(mockLogs as any)
 
         const result = await service.getAuditLogs()
 
         expect(result).toEqual(mockLogs)
-        expect(auditLogRepository.getAuditLogs).toHaveBeenCalledWith()
+        expect(auditLogRepository.getAuditLogs).toHaveBeenCalledWith({})
         })
 
         it('returns logs in occurrence order', async () => {
@@ -42,9 +48,9 @@ describe('AuditLogService', () => {
         const date2 = new Date('2026-04-28T10:05:00Z')
         const date3 = new Date('2026-04-28T10:10:00Z')
         const mockLogs = [
-            { id: 1, type: 'buy', walletId: 'wallet-1', stockName: 'ABC', createdAt: date1 },
-            { id: 2, type: 'sell', walletId: 'wallet-1', stockName: 'ABC', createdAt: date2 },
-            { id: 3, type: 'buy', walletId: 'wallet-1', stockName: 'XYZ', createdAt: date3 },
+            { id: 1, type: 'buy', wallet_id: 'wallet-1', stock_name: 'ABC', createdAt: date1 },
+            { id: 2, type: 'sell', wallet_id: 'wallet-1', stock_name: 'ABC', createdAt: date2 },
+            { id: 3, type: 'buy', wallet_id: 'wallet-1', stock_name: 'XYZ', createdAt: date3 },
         ]
         auditLogRepository.getAuditLogs.mockResolvedValueOnce(mockLogs as any)
 
@@ -79,8 +85,8 @@ describe('AuditLogService', () => {
         it('creates audit log with provided data', async () => {
         const newLog = {
             type: 'buy' as const,
-            walletId: 'wallet-1',
-            stockName: 'ABC',
+            wallet_id: 'wallet-1',
+            stock_name: 'ABC',
             createdAt: new Date(),
         }
         const trx = {}
@@ -93,8 +99,8 @@ describe('AuditLogService', () => {
         it('creates audit log with default db executor when not provided', async () => {
         const newLog = {
             type: 'sell' as const,
-            walletId: 'wallet-1',
-            stockName: 'ABC',
+            wallet_id: 'wallet-1',
+            stock_name: 'ABC',
             createdAt: new Date(),
         }
 
@@ -106,8 +112,8 @@ describe('AuditLogService', () => {
         it('propagates repository errors on creation', async () => {
         const newLog = {
             type: 'buy' as const,
-            walletId: 'wallet-1',
-            stockName: 'ABC',
+            wallet_id: 'wallet-1',
+            stock_name: 'ABC',
             createdAt: new Date(),
         }
         const error = new Error('Insert failed')

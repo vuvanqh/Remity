@@ -3,14 +3,15 @@ import { StockService } from './stock.service';
 import { StockRepository } from './stock.repository';
 import { NotFoundException } from '@nestjs/common';
 
-jest.mock('../../database/kysely.provider', () => (
-    {
-        db: 
-        {
-            transaction: () => ({execute: async (cb: any) => cb({})})
-        }
-    })
-);
+jest.mock('../../database/kysely.provider', () => ({
+  db: {
+    transaction: jest.fn().mockReturnValue({
+      setAccessMode: jest.fn().mockReturnThis(),
+      setIsolationLevel: jest.fn().mockReturnThis(),
+      execute: jest.fn(async (callback) => callback({})),
+    }),
+  },
+}))
 
 describe('StockService', () => {
     let service: StockService;
@@ -23,8 +24,7 @@ describe('StockService', () => {
             findStockByNameAsync: jest.fn(),
             createStock: jest.fn(),
             setStock: jest.fn(),
-            updateStockQuantity: jest.fn(),
-        } as jest.Mocked<StockRepository>;
+        } as unknown as jest.Mocked<StockRepository>;
 
         const module = await Test.createTestingModule({
             providers: [

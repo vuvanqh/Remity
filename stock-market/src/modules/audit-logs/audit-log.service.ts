@@ -11,7 +11,12 @@ export class AuditLogService {
     ){}
 
     public async getAuditLogs(): Promise<AuditLog[]> {
-        return await this.auditLogRepository.getAuditLogs();
+        return db.transaction()
+        .setAccessMode('read only')
+        .setIsolationLevel('snapshot')
+        .execute(async trx => {
+            return await this.auditLogRepository.getAuditLogs(trx);
+        });
     }
 
     public async createAuditLog(auditLog: NewAuditLog, exec: DbExecutor = db): Promise<void> {

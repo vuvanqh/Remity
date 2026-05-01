@@ -11,7 +11,9 @@ export class StockService{
     ) {}
 
     public async setStocks(stocks: SetStockRequestDto[]) {
-        await db.transaction().execute(async tsx=>{
+        await db.transaction()
+        .setIsolationLevel('serializable')
+        .execute(async tsx=>{
             for(const stock of stocks) {
                     const st = await this.stockRepository.findStockByNameAsync(stock.name, tsx);
                     if (!st) {

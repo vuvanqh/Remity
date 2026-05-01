@@ -4,30 +4,36 @@ import type { NewWalletStock, WalletStock, WalletStockUpdate } from "../../datab
 import { DbExecutor } from "../../database/types/dbContext";
 import { Wallet } from "../../database/types/wallet.types";
 
+
+const SQL_SERVER_ERRORS = {
+  DUPLICATE_KEY_PK_OR_UNIQUE: 2627,
+  DUPLICATE_KEY_UNIQUE_INDEX: 2601,
+} 
+
 @Injectable()
 export class WalletRepository {
-    public findWalletById = async (walletId: string, exec: DbExecutor = db): Promise<Wallet | undefined> => {
+    public findWalletById = async (wallet_id: string, exec: DbExecutor = db): Promise<Wallet | undefined> => {
         return await exec
         .selectFrom('wallets')
         .selectAll()
-        .where('id', '=', walletId)
+        .where('id', '=', wallet_id)
         .executeTakeFirst();
     }
 
-    public getWalletStocks = async (walletId: string, exec: DbExecutor = db): Promise<WalletStock[]> => {
+    public getWalletStocks = async (wallet_id: string, exec: DbExecutor = db): Promise<WalletStock[]> => {
         return await exec
         .selectFrom('walletStocks')
         .selectAll()
-        .where('walletId', '=', walletId)
+        .where('wallet_id', '=', wallet_id)
         .execute();
     }
 
-    public getWalletStockQuantity = async (walletId: string, stockName: string, exec: DbExecutor = db): Promise<number | undefined> => {
+    public getWalletStockQuantity = async (wallet_id: string, stock_name: string, exec: DbExecutor = db): Promise<number | undefined> => {
         return await exec
         .selectFrom('walletStocks')
         .select('quantity')
-        .where('walletId', '=', walletId)
-        .where('stockName', '=', stockName)
+        .where('wallet_id', '=', wallet_id)
+        .where('stock_name', '=', stock_name)
         .executeTakeFirst().then(res => res?.quantity);
     }
 
@@ -40,26 +46,73 @@ export class WalletRepository {
         .execute();
     }
 
-    public updateWalletStock = async (walletStock: WalletStockUpdate, exec: DbExecutor = db): Promise<void> => {
-        await exec
+    public updateWalletStock = async (walletStock: WalletStockUpdate, exec: DbExecutor = db) => {
+        const results = await exec
         .updateTable('walletStocks')
         .set({
-            walletId: walletStock.walletId!,
-            stockName: walletStock.stockName!,
             quantity: walletStock.quantity 
         })
-        .where('walletId', '=', walletStock.walletId!)
-        .where('stockName', '=', walletStock.stockName!)
+        .where('wallet_id', '=', walletStock.wallet_id!)
+        .where('stock_name', '=', walletStock.stock_name!)
         .execute();
+        return results?.reduce((sum, res) => sum + Number(res.numChangedRows??0),0);
     }
 
-    public insertWalletStock = async (walletStock: NewWalletStock, exec: DbExecutor = db): Promise<void> => {
+    public incrementWalletStock = async (wallet_id: string, stock_name: string, exec: DbExecutor = db): Promise<number> => {
+        const updateQuery = () => exec
+        .updateTable('walletStocks')
+        .set((eb) => {
+            return {
+                quantity: eb('quantity', '+', 1)
+            }
+        })
+        .where('wallet_id', '=', wallet_id)   
+        .where('stock_name', '=', stock_name)
+        .executeTakeFirst()
+        
+        const res = await updateQuery();
+        const rowsAffected = Number(res?.numChangedRows??0);
+        if(rowsAffected>0) return rowsAffected;
+
+        try {
+            await this.insertWalletStock({
+                wallet_id: wallet_id,
+                stock_name: stock_name,
+            }, exec);
+            return 1;
+        } catch (error: any) {
+            if(error?.number !== SQL_SERVER_ERRORS.DUPLICATE_KEY_PK_OR_UNIQUE
+                && error?.number !== SQL_SERVER_ERRORS.DUPLICATE_KEY_UNIQUE_INDEX
+            ) throw error;
+
+            const res = await updateQuery();
+            return Number(res?.numChangedRows??0); 
+        }
+    }
+
+    public decrementWalletStock = async (wallet_id: string, stock_name: string, exec: DbExecutor = db): Promise<number> => {
+        const res = await exec
+        .updateTable('walletStocks')
+        .set((eb) => {
+            return {
+                quantity: eb('quantity', '-', 1)
+            }
+        })
+        .where('wallet_id', '=', wallet_id)   
+        .where('stock_name', '=', stock_name)
+        .where('quantity', '>', 0)
+        .executeTakeFirst();
+        return Number(res?.numChangedRows??0n);
+    }
+
+
+    public insertWalletStock = async (walletStock: Partial<NewWalletStock>, exec: DbExecutor = db): Promise<void> => {
         await exec
         .insertInto('walletStocks')
         .values({
-            walletId: walletStock.walletId,
-            stockName: walletStock.stockName,
-            quantity: walletStock.quantity,
+            wallet_id: walletStock.wallet_id!,
+            stock_name: walletStock.stock_name!,
+            quantity: 1,
         })
         .execute();
     }

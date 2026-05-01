@@ -1,5 +1,5 @@
 import { WalletService } from "./wallet.service";
-import { Body, Controller, Get, Param, Post } from "@nestjs/common/decorators";
+import { Body, Controller, Get, Param, Post, HttpCode } from "@nestjs/common/decorators";
 import { Injectable } from "@nestjs/common";
 import { WalletStockOperationDto } from "./dtos/WalletStockOperationDto";
 
@@ -16,6 +16,7 @@ export class WalletController {
 
     //buy/sell stock
     @Post(':wallet_id/stocks/:stock_name')
+    @HttpCode(200)
     public async manageWallet(
         @Param('wallet_id') wallet_id: string,
         @Param('stock_name') stock_name: string,

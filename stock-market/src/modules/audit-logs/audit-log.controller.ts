@@ -7,7 +7,8 @@ export class AuditLogController {
     constructor(private readonly auditLogsService: AuditLogService) {}
 
     @Get()
-    public getAuditLogs() {
-        return this.auditLogsService.getAuditLogs();
+    public async getAuditLogs() {
+        const log = await this.auditLogsService.getAuditLogs();
+        return {log};
     }
 }

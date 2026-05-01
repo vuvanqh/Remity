@@ -30,6 +30,33 @@ export class StockRepository {
         .execute();
     }
 
+    public incrementStockQuantity = async (stockName: string, exec: DbExecutor = db): Promise<number> => {
+        const res = await exec
+        .updateTable('stocks')
+        .set((eb) => {
+            return {
+                quantity: eb('quantity', '+', 1)
+            }
+        })
+        .where('name', '=', stockName)
+        .executeTakeFirst();
+        return Number(res.numChangedRows??0);
+    }
+
+    public decrementStockQuantity = async (stockName: string, exec: DbExecutor = db): Promise<number | undefined> => {
+        const res = await exec
+        .updateTable('stocks')
+        .set((eb) => {
+            return {
+                quantity: eb('quantity', '-', 1)
+            }
+        })
+        .where('name', '=', stockName)
+        .where('quantity', '>', 0)
+        .executeTakeFirst();
+        return res.numChangedRows?Number(res.numChangedRows):undefined;
+    }
+
     public createStock = async (stock: NewStock, exec: DbExecutor = db): Promise<void> => {
         await exec
         .insertInto('stocks')

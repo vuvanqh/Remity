@@ -5,8 +5,8 @@ import {
 } from 'kysely'
 
 export interface WalletStocksTable {
-    walletId: string
-    stockName: string
+    wallet_id: string
+    stock_name: string
     quantity: number
 }
 

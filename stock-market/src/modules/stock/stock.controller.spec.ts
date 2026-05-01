@@ -36,10 +36,10 @@ describe('StockController', () => {
 
         const result = await controller.getStocks();
 
-        expect(result).toEqual([{
+        expect(result).toEqual({stocks: [{
             name:'stock1',
             quantity: 10
-        }]);
+        }]});
         expect(mockService.getStocks).toHaveBeenCalledTimes(1);
     });
 

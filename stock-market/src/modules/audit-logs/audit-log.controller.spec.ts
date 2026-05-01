@@ -39,7 +39,7 @@ describe('AuditLogController', () => {
 
       const result = await controller.getAuditLogs()
 
-      expect(result).toEqual(mockLogs)
+      expect(result).toEqual({log: mockLogs})
       expect(auditLogService.getAuditLogs).toHaveBeenCalledTimes(1)
     })
 
@@ -48,7 +48,7 @@ describe('AuditLogController', () => {
 
       const result = await controller.getAuditLogs()
 
-      expect(result).toEqual([])
+      expect(result).toEqual({log: []})
     })
 
     it('propagates service errors', async () => {

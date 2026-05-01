@@ -30,12 +30,12 @@ export async function up(db: Kysely<any>) {
   // WalletStocks (many-to-many join table)
   await db.schema
     .createTable('walletStocks')
-    .addColumn('walletId', 'varchar(255)', col =>
+    .addColumn('wallet_id', 'varchar(255)', col =>
       col.notNull()
       .references('wallets.id')
       .onDelete('cascade')
     )
-    .addColumn('stockName', 'varchar(255)', col =>
+    .addColumn('stock_name', 'varchar(255)', col =>
       col.notNull()
       .references('stocks.name')
       .onDelete('cascade')
@@ -45,7 +45,7 @@ export async function up(db: Kysely<any>) {
     )
     .addPrimaryKeyConstraint(
       'pk_wallet_stocks',
-      ['walletId', 'stockName']
+      ['wallet_id', 'stock_name']
     )
     .execute()
 
@@ -57,14 +57,14 @@ export async function up(db: Kysely<any>) {
       col.primaryKey()
       .identity()
     )
-    .addColumn('action', 'varchar(10)', col =>
+    .addColumn('type', 'varchar(10)', col =>
       col.notNull()
     )
-    .addColumn('walletId', 'varchar(255)', col =>
+    .addColumn('wallet_id', 'varchar(255)', col =>
       col.notNull()
       .references('wallets.id')
     )
-    .addColumn('stockName', 'varchar(255)', col =>
+    .addColumn('stock_name', 'varchar(255)', col =>
       col.notNull()
       .references('stocks.name')
     )

@@ -1,103 +1,95 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { WalletRepository } from "./wallet.repository";
-import { StockRepository } from "../stock/stock.repository";
-import { db } from "../../database/kysely.provider";
-import { WalletResponse } from "./dtos/walletResponse"; 
-import { TradePolicy } from "./policies/trade.policy";
-import { AuditLogRepository } from "../audit-logs/audit-log.repository";
+    import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+    import { WalletRepository } from "./wallet.repository";
+    import { StockRepository } from "../stock/stock.repository";
+    import { db } from "../../database/kysely.provider";
+    import { WalletResponse } from "./dtos/walletResponse"; 
+    import { AuditLogRepository } from "../audit-logs/audit-log.repository";
 
-@Injectable()
-export class WalletService {
-    constructor(
-        private readonly walletRepository: WalletRepository,
-        private readonly stockRepository: StockRepository,
-        private readonly tradePolicy: TradePolicy,
-        private readonly auditLogRepository: AuditLogRepository,
-    ) {}
-
-    public getWalletStocks = async (walletId: string): Promise<WalletResponse> => {
-        const wallet = await this.walletRepository.findWalletById(walletId);
-        if (!wallet) 
-            throw new NotFoundException('Wallet not found');
-
-        const walletStock = await this.walletRepository.getWalletStocks(walletId);
-        return {
-            id: walletId,
-            stocks: walletStock.map(stock => ({
-                name: stock.stockName,
-                quantity: stock.quantity,
-            }))
-        };
-    }
-
-    public getWalletStockQuantity = async (walletId: string, stockName: string): Promise<number> => {
-        const wallet = await this.walletRepository.findWalletById(walletId);
-        if (!wallet) 
-            throw new NotFoundException('Wallet not found');
-
-        return await this.walletRepository.getWalletStockQuantity(walletId, stockName)??0;
-
-    }
-
-    public async buyStock(walletId: string, stockName: string): Promise<void> {
-        await db.transaction().execute(async trx => {
-            const stock = await this.stockRepository.findStockByNameAsync(stockName, trx);
-
-            this.tradePolicy.ensureBuyAllowed(stock);
-            const wallet = await this.walletRepository.findWalletById(walletId, trx);
-
+    @Injectable()
+    export class WalletService {
+        constructor(
+            private readonly walletRepository: WalletRepository,
+            private readonly stockRepository: StockRepository,
+            private readonly auditLogRepository: AuditLogRepository,
+        ) {}
+        
+    //#region i guess something like this
+        public getWalletStocks = async (wallet_id: string): Promise<WalletResponse> => {    
+            const wallet = await this.walletRepository.findWalletById(wallet_id);
             if (!wallet) 
-                await this.walletRepository.createWallet(walletId, trx); 
-            
+                throw new NotFoundException('Wallet not found');
 
-            const quantity = await this.walletRepository.getWalletStockQuantity(walletId, stockName, trx);
-            if(quantity == undefined)
-                await this.walletRepository.insertWalletStock({
-                    walletId,
-                    stockName,
-                    quantity: 1,
+            const walletStock = await this.walletRepository.getWalletStocks(wallet_id);
+            return {
+                id: wallet_id,
+                stocks: walletStock.map(stock => ({
+                    name: stock.stock_name,
+                    quantity: stock.quantity,
+                }))
+            };  
+        }
+
+        public getWalletStockQuantity = async (wallet_id: string, stock_name: string): Promise<number> => {
+            const wallet = await this.walletRepository.findWalletById(wallet_id);
+            if (!wallet) 
+                throw new NotFoundException('Wallet not found');
+
+            return (await this.walletRepository.getWalletStockQuantity(wallet_id, stock_name))??0;
+        }
+    //#endregion
+
+        public async buyStock(wallet_id: string, stock_name: string): Promise<void> {
+            await db.transaction()
+            .setIsolationLevel('read committed')
+            .execute(async trx => {
+                const wallet = await this.walletRepository.findWalletById(wallet_id, trx);
+
+                if (!wallet) 
+                    await this.walletRepository.createWallet(wallet_id, trx); 
+                
+                const res = await this.stockRepository.decrementStockQuantity(stock_name, trx);
+
+                if(res==undefined)
+                    throw new NotFoundException(`Stock ${stock_name} does not exist`);
+                if(res===0)
+                    throw new BadRequestException(`Stock ${stock_name} is not available`);
+
+
+                await this.walletRepository.incrementWalletStock(wallet_id, stock_name, trx)             
+                await this.auditLogRepository.createAuditLog({
+                    type: "buy",
+                    wallet_id,
+                    stock_name
                 }, trx);
-            else 
-                await this.walletRepository.updateWalletStock({
-                    walletId,
-                    stockName,
-                    quantity: quantity + 1,
+            });
+        }
+
+        public async sellStock(wallet_id: string, stock_name: string): Promise<void> {
+            await db.transaction()
+            .setIsolationLevel('read committed')
+            .execute(async trx => {   
+                const wallet = await this.walletRepository.findWalletById(wallet_id, trx);
+
+                if (!wallet) //we could remove this to promote lazy creation on buy and decrease latency but to stay compliant with the requirements I'll keep this code for the time being.
+                {
+                    await this.walletRepository.createWallet(wallet_id, trx); 
+                    throw new BadRequestException(`Wallet does not have sufficient amount of stock '${stock_name}' to sell`);
+                }
+
+                const res = await this.walletRepository.decrementWalletStock(wallet_id, stock_name, trx);
+                if(res==0)
+                    throw new BadRequestException(`Wallet does not have sufficient amount of stock '${stock_name}' to sell`);
+
+                const stock_res = await this.stockRepository.incrementStockQuantity(stock_name, trx);
+                if(!stock_res)
+                    throw new NotFoundException(`Stock ${stock_name} does not exist`);
+
+                await this.auditLogRepository.createAuditLog({
+                    type: "sell",
+                    wallet_id,
+                    stock_name,
                 }, trx);
+            });
             
-
-            await this.stockRepository.updateStockQuantity(stockName, stock!.quantity - 1, trx);
-            await this.auditLogRepository.createAuditLog({
-                type: "buy",
-                walletId,
-                stockName
-            }, trx);
-        });
+        }
     }
-
-     public async sellStock(walletId: string, stockName: string): Promise<void> {
-        await db.transaction().execute(async trx => {
-            const stock = await this.stockRepository.findStockByNameAsync(stockName, trx);
-            const stockQuantity = await this.walletRepository.getWalletStockQuantity(walletId, stockName, trx)??0;
-            this.tradePolicy.ensureSellAllowed(stock, stockQuantity);         
-            
-            const wallet = await this.walletRepository.findWalletById(walletId, trx);
-            if (wallet == null)
-                throw new NotFoundException('Wallet not found');    
-            
-
-            await this.walletRepository.updateWalletStock({
-                walletId,
-                stockName,
-                quantity: stockQuantity - 1,
-            }, trx);
-
-            await this.stockRepository.updateStockQuantity(stockName, stock!.quantity + 1, trx);
-            await this.auditLogRepository.createAuditLog({
-                type: "sell",
-                walletId,
-                stockName,
-                createdAt: new Date(),
-            }, trx);
-        });
-    }
-}

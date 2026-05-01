@@ -15,10 +15,18 @@ The system is designed to be deterministic, fault-tolerant, and compliant with t
 
 ## Initialization
 
-The application is fully containerized and can be started with a single command:
+The application is containerized and started via a single command.
+
+### Start Command
 
 ```bash
-docker-compose up --build
+./start.sh <PORT>
+```
+
+Example:
+
+```bash
+./start.sh 4000
 ```
 
 This will:
@@ -34,40 +42,36 @@ The service will be available at:
 http://localhost:<PORT>
 ```
 
+If no port is provided, a default value is used.
+
+```bash
+./start.sh
+```
+
+---
+
 ### Configuration (Environment Variables)
 
-Runtime configuration (such as port mappings) is handled via environment variables.
+Runtime configuration is managed via environment variables.
+
+The `PORT` can be overridden at startup, but also has a default defined in `.env`.
 
 Example `docker-compose.yml`:
 
 ```yaml
 services:
-  app:
+  api:
     ports:
       - "${PORT:-3000}:3000"
 ```
 
-You can override the port at runtime:
+---
 
-```bash
-PORT=4000 docker-compose up --build
-```
+### Environment File
 
-Or define defaults using a `.env` file:
+The application uses a shared `.env` file for configuration.
 
-```env
-PORT=3000
-```
-
-Docker Compose automatically loads variables from `.env`.
-
-This approach allows flexible configuration without modifying the compose file.
-
-### Full Environment Configuration
-
-The application relies on a shared `.env` file for both the API and database services.
-
-An example configuration is provided in `.env.example`:
+Example (`.env.example`):
 
 ```env
 DB_HOST=localhost
@@ -78,23 +82,11 @@ DB_PASSWORD=StrongPassword123!
 PORT=3000
 ```
 
-These variables are used as follows:
+Notes:
 
-- **Database container**
-  - `DB_PASSWORD` → SQL Server `SA_PASSWORD`
-  - `DB_PORT` → exposed database port (`${DB_PORT}:1433`)
-
-- **API container**
-  - `DB_HOST` → database host (set to `db` inside Docker network)
-  - `DB_PORT` → internal database port (`1433`)
-  - `PORT` → exposed API port (`${PORT}:3000`)
-
-### Notes
-
-- Inside Docker, the API connects to the database using the service name (`db`), not `localhost`
-- The `.env` file is shared across services via `env_file`
-- Default values can be overridden at runtime without modifying configuration files
-
+- The startup script overrides `PORT` when provided
+- `.env` acts as a default configuration layer
+- Inside Docker, the API connects to the database using the service name (`db`)
 
 ---
 

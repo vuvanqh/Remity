@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { StockService } from "./stock.service";
 import { Body, Controller, Get, Post, HttpCode } from "@nestjs/common/decorators";
-import { SetStockRequestDto } from "./dtos/stockRequestDto";
+import { SetStockRequestDto } from "./dtos/stock-request.dto";
 
 @Controller('stocks')
 export class StockController {

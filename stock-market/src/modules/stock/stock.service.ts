@@ -1,8 +1,8 @@
 import { StockRepository } from "./stock.repository";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { db } from "../../database/kysely.provider";
-import { SetStockRequestDto } from "./dtos/stockRequestDto";
-import { StockResponseDto } from "./dtos/stockResponseDto";
+import { SetStockRequestDto } from "./dtos/stock-request.dto";
+import { StockResponseDto } from "./dtos/stock-response.dto";
 
 @Injectable()
 export class StockService{

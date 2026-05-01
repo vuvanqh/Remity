@@ -2,7 +2,7 @@
     import { WalletRepository } from "./wallet.repository";
     import { StockRepository } from "../stock/stock.repository";
     import { db } from "../../database/kysely.provider";
-    import { WalletResponse } from "./dtos/walletResponse"; 
+    import { WalletResponse } from "./dtos/wallet-response.dto"; 
     import { AuditLogRepository } from "../audit-logs/audit-log.repository";
 
     @Injectable()

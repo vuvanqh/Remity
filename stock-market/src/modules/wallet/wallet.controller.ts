@@ -1,7 +1,7 @@
 import { WalletService } from "./wallet.service";
 import { Body, Controller, Get, Param, Post, HttpCode } from "@nestjs/common/decorators";
 import { Injectable } from "@nestjs/common";
-import { WalletStockOperationDto } from "./dtos/WalletStockOperationDto";
+import { WalletStockOperationDto } from "./dtos/wallet-stock-operation.dto";
 
 
 @Injectable()

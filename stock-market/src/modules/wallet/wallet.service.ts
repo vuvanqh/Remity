@@ -50,13 +50,14 @@ export class WalletService {
             if (!wallet) 
                 await this.walletRepository.createWallet(wallet_id, trx); 
             
-            const res = await this.stockRepository.decrementStockQuantity(stock_name, trx);
-
-            if(res==undefined)
+            const stock = await this.stockRepository.findStockByNameAsync(stock_name, trx);
+            if(!stock)
                 throw new NotFoundException(`Stock ${stock_name} does not exist`);
-            if(res===0)
+
+            if(stock.quantity === 0)
                 throw new BadRequestException(`Stock ${stock_name} is not available`);
 
+            const res = await this.stockRepository.decrementStockQuantity(stock_name, trx);
 
             await this.walletStockRepository.incrementWalletStock(wallet_id, stock_name, trx)             
             await this.auditLogRepository.createAuditLog({
@@ -79,14 +80,17 @@ export class WalletService {
                 throw new BadRequestException(`Wallet does not have sufficient amount of stock '${stock_name}' to sell`);
             }
 
-            const res = await this.walletStockRepository.decrementWalletStock(wallet_id, stock_name, trx);
-            if(res==0)
+            const walletStock = await this.walletStockRepository.getWalletStockQuantity(wallet_id, stock_name, trx);
+            if(!walletStock || walletStock === 0)
                 throw new BadRequestException(`Wallet does not have sufficient amount of stock '${stock_name}' to sell`);
 
-            const stock_res = await this.stockRepository.incrementStockQuantity(stock_name, trx);
-            if(!stock_res)
+            await this.walletStockRepository.decrementWalletStock(wallet_id, stock_name, trx);
+
+            const stock = await this.stockRepository.findStockByNameAsync(stock_name, trx);
+            if(!stock)
                 throw new NotFoundException(`Stock ${stock_name} does not exist`);
 
+            await this.stockRepository.incrementStockQuantity(stock_name, trx);
             await this.auditLogRepository.createAuditLog({
                 type: "sell",
                 wallet_id,

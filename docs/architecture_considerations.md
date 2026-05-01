@@ -140,9 +140,9 @@ Inventory oversold
 
 Mitigation:
 
-- Row-level locking
+- Atomic conditional updates (`WHERE quantity > 0`)
 - Transactions
-- Pessimistic locking (`UPDLOCK`, `HOLDLOCK`) or equivalent
+- Database-level write guarantees
 
 ---
 

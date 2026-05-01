@@ -37,7 +37,7 @@ export class WalletRepository {
         .executeTakeFirst().then(res => res?.quantity);
     }
 
-    public createWallet = async (id: string, exec: DbExecutor = db): Promise<void> => {
+    public createWallet = async (id: string, exec: DbExecutor): Promise<void> => {
         await exec
         .insertInto('wallets')
         .values({
@@ -46,7 +46,7 @@ export class WalletRepository {
         .execute();
     }
 
-    public updateWalletStock = async (walletStock: WalletStockUpdate, exec: DbExecutor = db) => {
+    public updateWalletStock = async (walletStock: WalletStockUpdate, exec: DbExecutor) => {
         const results = await exec
         .updateTable('walletStocks')
         .set({
@@ -58,7 +58,7 @@ export class WalletRepository {
         return results?.reduce((sum, res) => sum + Number(res.numChangedRows??0),0);
     }
 
-    public incrementWalletStock = async (wallet_id: string, stock_name: string, exec: DbExecutor = db): Promise<number> => {
+    public incrementWalletStock = async (wallet_id: string, stock_name: string, exec: DbExecutor): Promise<number> => {
         const updateQuery = () => exec
         .updateTable('walletStocks')
         .set((eb) => {
@@ -90,7 +90,7 @@ export class WalletRepository {
         }
     }
 
-    public decrementWalletStock = async (wallet_id: string, stock_name: string, exec: DbExecutor = db): Promise<number> => {
+    public decrementWalletStock = async (wallet_id: string, stock_name: string, exec: DbExecutor): Promise<number> => {
         const res = await exec
         .updateTable('walletStocks')
         .set((eb) => {
@@ -106,7 +106,7 @@ export class WalletRepository {
     }
 
 
-    public insertWalletStock = async (walletStock: Partial<NewWalletStock>, exec: DbExecutor = db): Promise<void> => {
+    public insertWalletStock = async (walletStock: Partial<NewWalletStock>, exec: DbExecutor): Promise<void> => {
         await exec
         .insertInto('walletStocks')
         .values({

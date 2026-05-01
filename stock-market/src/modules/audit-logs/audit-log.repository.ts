@@ -13,7 +13,7 @@ export class AuditLogRepository {
         .execute();
     }
 
-    public createAuditLog = async (auditLog: NewAuditLog, exec: DbExecutor = db): Promise<void> => {
+    public createAuditLog = async (auditLog: NewAuditLog, exec: DbExecutor): Promise<void> => {
         await exec
         .insertInto('auditLogs')
         .values(auditLog)

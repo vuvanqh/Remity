@@ -19,7 +19,7 @@ export class StockRepository {
         .executeTakeFirst();
     }
 
-    public updateStockQuantity = async (stockName: string, quantity: number, exec: DbExecutor = db): Promise<void> => {
+    public updateStockQuantity = async (stockName: string, quantity: number, exec: DbExecutor): Promise<void> => {
         await exec
         .updateTable('stocks')
         .set({
@@ -30,7 +30,7 @@ export class StockRepository {
         .execute();
     }
 
-    public incrementStockQuantity = async (stockName: string, exec: DbExecutor = db): Promise<number> => {
+    public incrementStockQuantity = async (stockName: string, exec: DbExecutor): Promise<number> => {
         const res = await exec
         .updateTable('stocks')
         .set((eb) => {
@@ -43,7 +43,7 @@ export class StockRepository {
         return Number(res.numChangedRows??0);
     }
 
-    public decrementStockQuantity = async (stockName: string, exec: DbExecutor = db): Promise<number | undefined> => {
+    public decrementStockQuantity = async (stockName: string, exec: DbExecutor): Promise<number | undefined> => {
         const res = await exec
         .updateTable('stocks')
         .set((eb) => {
@@ -57,7 +57,7 @@ export class StockRepository {
         return res.numChangedRows?Number(res.numChangedRows):undefined;
     }
 
-    public createStock = async (stock: NewStock, exec: DbExecutor = db): Promise<void> => {
+    public createStock = async (stock: NewStock, exec: DbExecutor): Promise<void> => {
         await exec
         .insertInto('stocks')
         .values({
@@ -67,7 +67,7 @@ export class StockRepository {
         .execute();
     }
 
-    public setStock = async (stock: NewStock, exec: DbExecutor = db): Promise<void> => {
+    public setStock = async (stock: NewStock, exec: DbExecutor): Promise<void> => {
         await exec
         .updateTable('stocks')
         .set({

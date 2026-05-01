@@ -1,10 +1,13 @@
-import { IsInt, Min, IsString } from "class-validator";
+import { IsInt, Min, IsString, IsNotEmpty } from "class-validator";
 import { Type } from 'class-transformer';
+import { ApiProperty } from "@nestjs/swagger";
 
 export class SetStockRequestDto {
-    @IsString()
+    @ApiProperty()
+    @IsString() @IsNotEmpty()
     name!: string;
 
+    @ApiProperty()
     @Type(() => Number) @IsInt() @Min(1)
     quantity!: number;
 }

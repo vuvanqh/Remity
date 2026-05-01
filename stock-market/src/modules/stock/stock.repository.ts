@@ -39,8 +39,8 @@ export class StockRepository {
             }
         })
         .where('name', '=', stockName)
-        .executeTakeFirst();
-        return Number(res.numChangedRows??0);
+        .execute();
+        return Number(res[0]?.numChangedRows ?? 0);
     }
 
     public decrementStockQuantity = async (stockName: string, exec: DbExecutor): Promise<number | undefined> => {
@@ -53,8 +53,8 @@ export class StockRepository {
         })
         .where('name', '=', stockName)
         .where('quantity', '>', 0)
-        .executeTakeFirst();
-        return res.numChangedRows?Number(res.numChangedRows):undefined;
+        .execute();
+        return Number(res[0]?.numChangedRows ?? 0);
     }
 
     public createStock = async (stock: NewStock, exec: DbExecutor): Promise<void> => {

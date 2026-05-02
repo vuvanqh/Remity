@@ -122,8 +122,8 @@ PORT=3000
 
 Notes:
 
+- **Important**: The `.env` file is **mandatory** for local development and testing. You must copy `.env.example` to `.env` before running the app or tests.
 - The startup script overrides `PORT` when provided
-- `.env` acts as a default configuration layer
 - Inside Docker, the API connects to the database using the service name (`db`)
 
 ---

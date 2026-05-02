@@ -9,14 +9,18 @@ export class AuditLogRepository {
         return await exec
         .selectFrom('auditLogs')
         .selectAll()
-        .orderBy('id', 'asc')
+        .orderBy('createdAt', 'asc')
         .execute();
     }
 
     public createAuditLog = async (auditLog: NewAuditLog, exec: DbExecutor): Promise<void> => {
         await exec
         .insertInto('auditLogs')
-        .values(auditLog)
+        .values({
+            type: auditLog.type,
+            wallet_id: auditLog.wallet_id,
+            stock_name: auditLog.stock_name,
+        })
         .execute();
     }
 }

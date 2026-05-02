@@ -12,11 +12,6 @@ export class AuditLogService {
 
     public async getAuditLogs(): Promise<AuditLogResponseDto[]> {
         let logs = await this.auditLogRepository.getAuditLogs();
-        await logs.sort((a, b) => {
-            a.createdAt = new Date(a.createdAt);
-            b.createdAt = new Date(b.createdAt);
-            return a.createdAt.getTime() - b.createdAt.getTime();
-        });
         return logs.map(log => {
             return {
                 type: log.type,

@@ -27,8 +27,6 @@ export class WalletController {
         return await this.walletService.getWalletStocks(wallet_id);
     }
 
-    @Post(':wallet_id/stocks/:stock_name')
-    @HttpCode(200)
     @ApiOperation({
         summary: 'Buy or sell a stock',
         description: `
@@ -95,7 +93,8 @@ export class WalletController {
     public async getWalletStockQuantity(
         @Param('wallet_id') wallet_id: string,
         @Param('stock_name') stock_name: string,
-    ) {
-        return await this.walletService.getWalletStockQuantity(wallet_id, stock_name);
+    ): Promise<number> {
+        const quantity = await this.walletService.getWalletStockQuantity(wallet_id, stock_name);
+        return quantity;
     }
 }

@@ -39,11 +39,11 @@ export class StockRepository {
             }
         })
         .where('name', '=', stockName)
-        .execute();
-        return Number(res[0]?.numChangedRows ?? 0);
+        .executeTakeFirst();
+        return Number(res.numUpdatedRows);
     }
 
-    public decrementStockQuantity = async (stockName: string, exec: DbExecutor): Promise<number | undefined> => {
+    public decrementStockQuantity = async (stockName: string, exec: DbExecutor): Promise<number> => {
         const res = await exec
         .updateTable('stocks')
         .set((eb) => {
@@ -53,8 +53,8 @@ export class StockRepository {
         })
         .where('name', '=', stockName)
         .where('quantity', '>', 0)
-        .execute();
-        return Number(res[0]?.numChangedRows ?? 0);
+        .executeTakeFirst();
+        return Number(res.numUpdatedRows);
     }
 
     public createStock = async (stock: NewStock, exec: DbExecutor): Promise<void> => {

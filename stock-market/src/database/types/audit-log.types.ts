@@ -7,7 +7,7 @@ import {
 } from 'kysely'
 
 export interface AuditLogsTable {
-    id: Generated<number>
+    id: Generated<string>
     type: "buy" | "sell"
     wallet_id: string
     stock_name: string

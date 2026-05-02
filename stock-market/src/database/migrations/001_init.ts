@@ -53,9 +53,9 @@ export async function up(db: Kysely<any>) {
   // Audit Logs
   await db.schema
     .createTable('auditLogs')
-    .addColumn('id', 'integer', col =>
+    .addColumn('id', sql`uniqueidentifier`, col =>
       col.primaryKey()
-      .identity()
+      .defaultTo(sql`NEWSEQUENTIALID()`)
     )
     .addColumn('type', 'varchar(10)', col =>
       col.notNull()

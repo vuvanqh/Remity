@@ -40,6 +40,7 @@ describe('WalletService', () => {
         stockRepository = {
             incrementStockQuantity: jest.fn(),
             decrementStockQuantity: jest.fn(),
+            findStockByNameAsync: jest.fn(),
         } as unknown as jest.Mocked<StockRepository>
 
         auditLogRepository = {
@@ -108,6 +109,7 @@ describe('WalletService', () => {
             executeMock.mockImplementationOnce(async callback => callback(trx))
             stockRepository.decrementStockQuantity.mockResolvedValueOnce(1)
             walletRepository.findWalletById.mockResolvedValueOnce(undefined)
+            stockRepository.findStockByNameAsync.mockResolvedValueOnce({ name: 'stock1' } as any)
 
             await service.buyStock('wallet1', 'stock1')
 
@@ -126,6 +128,7 @@ describe('WalletService', () => {
             executeMock.mockImplementationOnce(async callback => callback(trx))
             stockRepository.decrementStockQuantity.mockResolvedValueOnce(1)
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
+            stockRepository.findStockByNameAsync.mockResolvedValueOnce({ name: 'stock1' } as any)
 
             await service.buyStock('wallet1', 'stock1')
 
@@ -142,7 +145,7 @@ describe('WalletService', () => {
         it('throws NotFoundException when stock does not exist', async () => {
             const trx = {}
             executeMock.mockImplementationOnce(async callback => callback(trx))
-            stockRepository.decrementStockQuantity.mockResolvedValueOnce(undefined)
+            stockRepository.decrementStockQuantity.mockResolvedValueOnce(0)
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
 
             await expect(service.buyStock('wallet1', 'stock1')).rejects.toThrow(NotFoundException)
@@ -154,6 +157,7 @@ describe('WalletService', () => {
             executeMock.mockImplementationOnce(async callback => callback(trx))
             stockRepository.decrementStockQuantity.mockResolvedValueOnce(0)
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
+            stockRepository.findStockByNameAsync.mockResolvedValueOnce({ name: 'stock1' } as any)
 
             await expect(service.buyStock('wallet1', 'stock1')).rejects.toThrow(BadRequestException)
             expect(walletStockRepository.incrementWalletStock).not.toHaveBeenCalled()
@@ -165,8 +169,10 @@ describe('WalletService', () => {
             const trx = {}
             executeMock.mockImplementationOnce(async callback => callback(trx))
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
+            walletStockRepository.getWalletStockQuantity.mockResolvedValueOnce(1)
             walletStockRepository.decrementWalletStock.mockResolvedValueOnce(1)
             stockRepository.incrementStockQuantity.mockResolvedValueOnce(1)
+            stockRepository.findStockByNameAsync.mockResolvedValueOnce({ name: 'stock1' } as any)
 
             await service.sellStock('wallet1', 'stock1')
 
@@ -193,7 +199,8 @@ describe('WalletService', () => {
             const trx = {}
             executeMock.mockImplementationOnce(async callback => callback(trx))
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
-            walletStockRepository.decrementWalletStock.mockResolvedValueOnce(0)
+            walletStockRepository.getWalletStockQuantity.mockResolvedValueOnce(0)
+            stockRepository.findStockByNameAsync.mockResolvedValueOnce({ name: 'stock1' } as any)
 
             await expect(service.sellStock('wallet1', 'stock1')).rejects.toThrow(BadRequestException)
             expect(stockRepository.incrementStockQuantity).not.toHaveBeenCalled()
@@ -203,6 +210,7 @@ describe('WalletService', () => {
             const trx = {}
             executeMock.mockImplementationOnce(async callback => callback(trx))
             walletRepository.findWalletById.mockResolvedValueOnce({ id: 'wallet1' } as any)
+            walletStockRepository.getWalletStockQuantity.mockResolvedValueOnce(1)
             walletStockRepository.decrementWalletStock.mockResolvedValueOnce(1)
             stockRepository.incrementStockQuantity.mockResolvedValueOnce(0)
 

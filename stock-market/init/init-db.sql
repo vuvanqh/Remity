@@ -1,5 +1,6 @@
-IF DB_ID('StockMarketDB') IS NULL
+IF DB_ID('$(DB_NAME)') IS NULL
 BEGIN
-    CREATE DATABASE StockMarketDB;
+    DECLARE @sql NVARCHAR(MAX) = N'CREATE DATABASE ' + QUOTENAME('$(DB_NAME)');
+    EXEC sp_executesql @sql;
 END
 GO

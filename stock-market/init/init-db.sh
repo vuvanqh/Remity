@@ -21,6 +21,7 @@ echo "Creating database if missing..."
    -U sa \
    -P "$SA_PASSWORD" \
    -C \
+   -v DB_NAME="$DB_NAME" \
    -i /init/init-db.sql
 
 echo "Database initialization complete."

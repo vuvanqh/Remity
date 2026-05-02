@@ -22,7 +22,7 @@ const dialect = new MssqlDialect({
                 type: 'default',
             },
             options: {
-                database: process.env.DB_NAME?? 'stock_market_db',
+                database: process.env.DB_NAME?? 'StockMarketDB',
                 encrypt: true,
                 trustServerCertificate: true,
                 port: Number(process.env.DB_PORT) || 1433,

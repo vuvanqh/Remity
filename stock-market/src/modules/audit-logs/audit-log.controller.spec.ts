@@ -32,8 +32,8 @@ describe('AuditLogController', () => {
   describe('getAuditLogs', () => {
     it('returns audit logs from service', async () => {
       const mockLogs = [
-        { id: 1, type: 'buy', walletId: 'wallet-1', stockName: 'ABC', createdAt: new Date() },
-        { id: 2, type: 'sell', walletId: 'wallet-1', stockName: 'ABC', createdAt: new Date() },
+        { type: 'buy', wallet_id: 'wallet-1', stock_name: 'ABC' },
+        { type: 'sell', wallet_id: 'wallet-1', stock_name: 'ABC' },
       ]
       auditLogService.getAuditLogs.mockResolvedValueOnce(mockLogs as any)
 

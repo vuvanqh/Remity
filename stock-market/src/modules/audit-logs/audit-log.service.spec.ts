@@ -32,15 +32,18 @@ describe('AuditLogService', () => {
     describe('getAuditLogs', () => {
         it('returns audit logs from repository', async () => {
         const mockLogs = [
-            { id: 1, type: 'buy', wallet_id: 'wallet-1', stock_name: 'ABC', createdAt: new Date() },
-            { id: 2, type: 'sell', wallet_id: 'wallet-1', stock_name: 'ABC', createdAt: new Date() },
+            { id: '1', type: 'buy', wallet_id: 'wallet-1', stock_name: 'ABC', createdAt: new Date() },
+            { id: '2', type: 'sell', wallet_id: 'wallet-1', stock_name: 'ABC', createdAt: new Date() },
         ]
         auditLogRepository.getAuditLogs.mockResolvedValueOnce(mockLogs as any)
 
         const result = await service.getAuditLogs()
 
-        expect(result).toEqual(mockLogs)
-        expect(auditLogRepository.getAuditLogs).toHaveBeenCalledWith({})
+        expect(result).toEqual([
+            { type: 'buy', wallet_id: 'wallet-1', stock_name: 'ABC' },
+            { type: 'sell', wallet_id: 'wallet-1', stock_name: 'ABC' },
+        ])
+        expect(auditLogRepository.getAuditLogs).toHaveBeenCalledWith()
         })
 
         it('returns logs in occurrence order', async () => {
@@ -48,20 +51,20 @@ describe('AuditLogService', () => {
         const date2 = new Date('2026-04-28T10:05:00Z')
         const date3 = new Date('2026-04-28T10:10:00Z')
         const mockLogs = [
-            { id: 1, type: 'buy', wallet_id: 'wallet-1', stock_name: 'ABC', createdAt: date1 },
-            { id: 2, type: 'sell', wallet_id: 'wallet-1', stock_name: 'ABC', createdAt: date2 },
-            { id: 3, type: 'buy', wallet_id: 'wallet-1', stock_name: 'XYZ', createdAt: date3 },
+            { id: '1', type: 'buy', wallet_id: 'wallet-1', stock_name: 'ABC', createdAt: date1 },
+            { id: '2', type: 'sell', wallet_id: 'wallet-1', stock_name: 'ABC', createdAt: date2 },
+            { id: '3', type: 'buy', wallet_id: 'wallet-1', stock_name: 'XYZ', createdAt: date3 },
         ]
         auditLogRepository.getAuditLogs.mockResolvedValueOnce(mockLogs as any)
 
         const result = await service.getAuditLogs()
 
         expect(result.length).toBe(3)
-        for (let i = 1; i < result.length; i++) {
-            const prevTime = result[i - 1].createdAt.getTime()
-            const currTime = result[i].createdAt.getTime()
-            expect(prevTime).toBeLessThanOrEqual(currTime)
-        }
+        expect(result).toEqual([
+            { type: 'buy', wallet_id: 'wallet-1', stock_name: 'ABC' },
+            { type: 'sell', wallet_id: 'wallet-1', stock_name: 'ABC' },
+            { type: 'buy', wallet_id: 'wallet-1', stock_name: 'XYZ' },
+        ])
         })
 
         it('returns empty array when no logs exist', async () => {
@@ -96,19 +99,6 @@ describe('AuditLogService', () => {
         expect(auditLogRepository.createAuditLog).toHaveBeenCalledWith(newLog, trx)
         })
 
-        it('creates audit log with default db executor when not provided', async () => {
-        const newLog = {
-            type: 'sell' as const,
-            wallet_id: 'wallet-1',
-            stock_name: 'ABC',
-            createdAt: new Date(),
-        }
-
-        await service.createAuditLog(newLog)
-
-        expect(auditLogRepository.createAuditLog).toHaveBeenCalledWith(newLog, db)
-        })
-
         it('propagates repository errors on creation', async () => {
         const newLog = {
             type: 'buy' as const,
@@ -116,10 +106,11 @@ describe('AuditLogService', () => {
             stock_name: 'ABC',
             createdAt: new Date(),
         }
+        const trx = {}
         const error = new Error('Insert failed')
         auditLogRepository.createAuditLog.mockRejectedValueOnce(error)
 
-        await expect(service.createAuditLog(newLog)).rejects.toThrow('Insert failed')
+        await expect(service.createAuditLog(newLog, trx as any)).rejects.toThrow('Insert failed')
         })
     })
 })

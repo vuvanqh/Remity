@@ -1,18 +1,19 @@
+require('dotenv').config();
 const tedious = require('tedious');
 const config = {
   authentication: {
     options: {
-      userName: process.env.DB_USER || 'sa',
-      password: process.env.DB_PASSWORD || 'yourStrong(!)Password',
+      userName: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
     },
     type: 'default',
   },
-  server: process.env.DB_HOST || 'localhost',
+  server: process.env.DB_HOST,
   options: {
-    database: process.env.DB_NAME || 'StockMarketDB',
+    database: process.env.DB_NAME,
     encrypt: true,
     trustServerCertificate: true,
-    port: Number(process.env.DB_PORT) || 1433,
+    port: Number(process.env.DB_PORT),
   },
 };
 

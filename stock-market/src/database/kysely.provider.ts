@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { Database } from './types/dbContext'
 import * as tedious from 'tedious'
 import * as tarn from 'tarn'

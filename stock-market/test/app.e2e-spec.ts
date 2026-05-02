@@ -4,6 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { db } from '../src/database/kysely.provider';
 
+jest.setTimeout(20000);
 describe('Stock Market (e2e)', () => {
   let app: INestApplication;
 
@@ -15,6 +16,15 @@ describe('Stock Market (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());
     await app.init();
+
+    for (let i = 0; i < 10; i++) {
+      try {
+        await db.selectFrom('stocks').selectAll().execute();
+        break;
+      } catch {
+        await new Promise(res => setTimeout(res, 1000));
+      }
+    }
   });
 
   beforeEach(async () => {

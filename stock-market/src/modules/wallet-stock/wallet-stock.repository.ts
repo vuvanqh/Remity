@@ -52,7 +52,7 @@ export class WalletStockRepository {
         .executeTakeFirst()
         
         const res = await updateQuery();
-        const rowsAffected = Number(res?.numChangedRows??0);
+        const rowsAffected = Number(res.numUpdatedRows);
         if(rowsAffected>0) return rowsAffected;
 
         try {
@@ -67,7 +67,7 @@ export class WalletStockRepository {
             ) throw error;
 
             const res = await updateQuery();
-            return Number(res[0]?.numChangedRows ?? 0);
+            return Number(res.numUpdatedRows);
         }
     }
 
@@ -82,8 +82,8 @@ export class WalletStockRepository {
         .where('wallet_id', '=', wallet_id)   
         .where('stock_name', '=', stock_name)
         .where('quantity', '>', 0)
-        .execute();
-        return Number(res[0]?.numChangedRows ?? 0)
+        .executeTakeFirst();
+        return Number(res.numUpdatedRows);
     }
 
 

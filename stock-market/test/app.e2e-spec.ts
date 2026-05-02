@@ -1,146 +1,218 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from './../src/app.module';
-import { WalletService } from '../src/modules/wallet/wallet.service';
-import { StockService } from '../src/modules/stock/stock.service';
-import { AuditLogService } from '../src/modules/audit-logs/audit-log.service';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { AppModule } from '../src/app.module';
+import { db } from '../src/database/kysely.provider';
 
-describe('Stock Market API (e2e)', () => {
+describe('Stock Market (e2e)', () => {
   let app: INestApplication;
-  
-  const mockWalletService = {
-    buyStock: jest.fn(),
-    sellStock: jest.fn(),
-    getWalletStocks: jest.fn(),
-    getWalletStockQuantity: jest.fn(),
-  };
-
-  const mockStockService = {
-    setStocks: jest.fn(),
-    getStocks: jest.fn(),
-    getStock: jest.fn(),
-  };
-
-  const mockAuditLogService = {
-    getAuditLogs: jest.fn(),
-  };
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    })
-    .overrideProvider(WalletService)
-    .useValue(mockWalletService)
-    .overrideProvider(StockService)
-    .useValue(mockStockService)
-    .overrideProvider(AuditLogService)
-    .useValue(mockAuditLogService)
-    .compile();
+    }).compile();
 
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe());
     await app.init();
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
+  beforeEach(async () => {
+    await db.deleteFrom('auditLogs').execute();
+    await db.deleteFrom('walletStocks').execute();
+    await db.deleteFrom('wallets').execute();
+    await db.deleteFrom('stocks').execute();
   });
 
   afterAll(async () => {
-    await app.close();
+    await app.close();  
   });
 
-  describe('Wallets API', () => {
-    it('POST /wallets/:wallet_id/stocks/:stock_name - fails on invalid type (400)', async () => {
-      return request(app.getHttpServer())
-        .post('/wallets/w1/stocks/s1')
-        .send({ type: 'invalid_type' })
-        .expect(400); 
-    });
-
-    it('POST /wallets/:wallet_id/stocks/:stock_name - successful buy (200)', async () => {
-      mockWalletService.buyStock.mockResolvedValue(undefined);
-
-      return request(app.getHttpServer())
-        .post('/wallets/w1/stocks/s1')
-        .send({ type: 'buy' })
-        .expect(200);
-    });
-
-    it('POST /wallets/:wallet_id/stocks/:stock_name - buy fails if stock missing (404)', async () => {
-      mockWalletService.buyStock.mockRejectedValue(new NotFoundException());
-
-      return request(app.getHttpServer())
-        .post('/wallets/w1/stocks/missing_stock')
-        .send({ type: 'buy' })
-        .expect(404);
-    });
-
-    it('POST /wallets/:wallet_id/stocks/:stock_name - buy fails if stock empty (400)', async () => {
-      mockWalletService.buyStock.mockRejectedValue(new BadRequestException());
-
-      return request(app.getHttpServer())
-        .post('/wallets/w1/stocks/empty_stock')
-        .send({ type: 'buy' })
-        .expect(400);
-    });
-
-    it('POST /wallets/:wallet_id/stocks/:stock_name - successful sell (200)', async () => {
-      mockWalletService.sellStock.mockResolvedValue(undefined);
-
-      return request(app.getHttpServer())
-        .post('/wallets/w1/stocks/s1')
-        .send({ type: 'sell' })
-        .expect(200);
-    });
-
-    it('GET /wallets/:wallet_id - returns wallet state', async () => {
-      mockWalletService.getWalletStocks.mockResolvedValue({
-        id: 'w1',
-        stocks: [{ name: 's1', quantity: 99 }]
-      });
-
-      return request(app.getHttpServer())
-        .get('/wallets/w1')
-        .expect(200)
-        .expect({ id: 'w1', stocks: [{ name: 's1', quantity: 99 }] });
-    });
+  it('GET /health', async () => {
+    await request(app.getHttpServer())
+      .get('/health')
+      .expect(200)
+      .expect({ status: 'ok' });
   });
 
-  describe('Stocks API', () => {
-    it('GET /stocks - returns bank state', async () => {
-      mockStockService.getStocks.mockResolvedValue([
-        { name: 's1', quantity: 99 }
-      ]);
+  it('POST /stocks + GET /stocks', async () => {
+    await request(app.getHttpServer())
+      .post('/stocks')
+      .send({
+        stocks: [
+          { name: 's1', quantity: 10 },
+          { name: 's2', quantity: 5 },
+        ],
+      })
+      .expect(200);
 
-      return request(app.getHttpServer())
-        .get('/stocks')
-        .expect(200)
-        .expect({ stocks: [{ name: 's1', quantity: 99 }] });
+    const res = await request(app.getHttpServer()).get('/stocks').expect(200);
+
+    expect(res.body.stocks).toEqual(
+      expect.arrayContaining([
+        { name: 's1', quantity: 10 },
+        { name: 's2', quantity: 5 },
+      ]),
+    );
+  });
+
+  it('BUY flow creates wallet and updates bank', async () => {
+    await request(app.getHttpServer())
+      .post('/stocks')
+      .send({ stocks: [{ name: 's1', quantity: 2 }] });
+
+    await request(app.getHttpServer())
+      .post('/wallets/w1/stocks/s1')
+      .send({ type: 'buy' })
+      .expect(200);
+
+    const wallet = await request(app.getHttpServer())
+      .get('/wallets/w1')
+      .expect(200);
+
+    expect(wallet.body).toEqual({
+      id: 'w1',
+      stocks: [{ name: 's1', quantity: 1 }],
     });
 
-    it('POST /stocks - sets bank state (200)', async () => {
-      mockStockService.setStocks.mockResolvedValue(undefined);
+    const stocks = await request(app.getHttpServer()).get('/stocks');
 
-      return request(app.getHttpServer())
-        .post('/stocks')
-        .send({ stocks: [{ name: 's1', quantity: 99 }] })
-        .expect(200);
+    expect(stocks.body.stocks).toContainEqual({
+      name: 's1',
+      quantity: 1,
     });
   });
 
-  describe('Audit Log API', () => {
-    it('GET /log - returns audit log', async () => {
-      mockAuditLogService.getAuditLogs.mockResolvedValue([
-        { type: 'buy', wallet_id: 'w1', stock_name: 's1' }
-      ]);
+  it('BUY fails if stock does not exist (404)', async () => {
+    await request(app.getHttpServer())
+      .post('/wallets/w1/stocks/unknown')
+      .send({ type: 'buy' })
+      .expect(404);
+  });
 
-      return request(app.getHttpServer())
-        .get('/log')
-        .expect(200)
-        .expect({ log: [{ type: 'buy', wallet_id: 'w1', stock_name: 's1' }] });
-    });
+  it('BUY fails if stock empty (400)', async () => {
+    await request(app.getHttpServer())
+      .post('/stocks')
+      .send({ stocks: [{ name: 's1', quantity: 0 }] });
+
+    await request(app.getHttpServer())
+      .post('/wallets/w1/stocks/s1')
+      .send({ type: 'buy' })
+      .expect(400);
+  });
+
+  it('SELL decreases wallet and increases bank', async () => {
+    await request(app.getHttpServer())
+      .post('/stocks')
+      .send({ stocks: [{ name: 's1', quantity: 1 }] });
+
+    await request(app.getHttpServer())
+      .post('/wallets/w1/stocks/s1')
+      .send({ type: 'buy' });
+
+    await request(app.getHttpServer())
+      .post('/wallets/w1/stocks/s1')
+      .send({ type: 'sell' })
+      .expect(200);
+
+    const wallet = await request(app.getHttpServer()).get('/wallets/w1');
+
+    expect(wallet.body.stocks[0].quantity).toBe(0);
+
+    const stocks = await request(app.getHttpServer()).get('/stocks');
+
+    expect(stocks.body.stocks[0].quantity).toBe(1);
+  });
+
+  it('SELL fails if wallet has no stock (400)', async () => {
+    await request(app.getHttpServer())
+      .post('/stocks')
+      .send({ stocks: [{ name: 's1', quantity: 10 }] });
+
+    await request(app.getHttpServer())
+      .post('/wallets/w1/stocks/s1')
+      .send({ type: 'sell' })
+      .expect(400);
+  });
+
+  it('GET wallet stock quantity', async () => {
+    await request(app.getHttpServer())
+      .post('/stocks')
+      .send({ stocks: [{ name: 's1', quantity: 5 }] });
+
+    await request(app.getHttpServer())
+      .post('/wallets/w1/stocks/s1')
+      .send({ type: 'buy' });
+
+    const res = await request(app.getHttpServer())
+      .get('/wallets/w1/stocks/s1')
+      .expect(200);
+
+    expect(Number(res.text)).toBe(1);
+  });
+
+  it('GET /log returns only successful operations in order', async () => {
+    await request(app.getHttpServer())
+      .post('/stocks')
+      .send({ stocks: [{ name: 's1', quantity: 2 }] });
+
+    await request(app.getHttpServer())
+      .post('/wallets/w1/stocks/s1')
+      .send({ type: 'buy' });
+
+    await request(app.getHttpServer())
+      .post('/wallets/w1/stocks/s1')
+      .send({ type: 'sell' });
+
+    const res = await request(app.getHttpServer()).get('/log').expect(200);
+
+    expect(res.body.log).toEqual([
+      { type: 'buy', wallet_id: 'w1', stock_name: 's1' },
+      { type: 'sell', wallet_id: 'w1', stock_name: 's1' },
+    ]);
+  });
+  it('high concurrency: never oversells and preserves invariants', async () => {
+    const STOCK = 's1';
+    const INITIAL = 10;
+    const REQUESTS = 50;
+
+    await request(app.getHttpServer())
+      .post('/stocks')
+      .send({ stocks: [{ name: STOCK, quantity: INITIAL }] })
+      .expect(200);
+
+    const responses = await Promise.allSettled(
+      Array.from({ length: REQUESTS }).map(() =>
+        request(app.getHttpServer())
+          .post(`/wallets/w1/stocks/${STOCK}`)
+          .send({ type: 'buy' }),
+      ),
+    );
+
+    const successCount = responses.filter(
+      (r) => r.status === 'fulfilled' && r.value.status === 200,
+    ).length;
+
+    const failureCount = responses.length - successCount;
+
+    expect(successCount).toBe(INITIAL);
+    expect(failureCount).toBeGreaterThan(0);
+
+    const bank = await request(app.getHttpServer()).get('/stocks').expect(200);
+
+    const stock = bank.body.stocks.find((s: any) => s.name === STOCK);
+    expect(stock.quantity).toBe(0);
+
+    const wallet = await request(app.getHttpServer())
+      .get('/wallets/w1')
+      .expect(200);
+
+    const walletStock = wallet.body.stocks.find((s: any) => s.name === STOCK);
+    expect(walletStock.quantity).toBe(INITIAL);
+
+    const log = await request(app.getHttpServer()).get('/log').expect(200);
+
+    const buys = log.body.log.filter((l: any) => l.type === 'buy');
+    expect(buys.length).toBe(INITIAL);
   });
 });

@@ -54,10 +54,9 @@ export class WalletService {
             if(!stock)
                 throw new NotFoundException(`Stock ${stock_name} does not exist`);
 
-            if(stock.quantity === 0)
-                throw new BadRequestException(`Stock ${stock_name} is not available`);
-
             const res = await this.stockRepository.decrementStockQuantity(stock_name, trx);
+            if(res === 0)
+                throw new BadRequestException(`Stock ${stock_name} is not available`);
 
             await this.walletStockRepository.incrementWalletStock(wallet_id, stock_name, trx)             
             await this.auditLogRepository.createAuditLog({
@@ -77,12 +76,12 @@ export class WalletService {
             if (!wallet) //we could remove this to promote lazy creation on buy and decrease latency but to stay compliant with the requirements I'll keep this code for the time being.
             {
                 await this.walletRepository.createWallet(wallet_id, trx); 
-                throw new BadRequestException(`Wallet does not have sufficient amount of stock '${stock_name}' to sell`);
+                throw new BadRequestException(`Wallet ${wallet_id} does not have sufficient amount of stock '${stock_name}' to sell`);
             }
 
             const walletStock = await this.walletStockRepository.getWalletStockQuantity(wallet_id, stock_name, trx);
-            if(!walletStock || walletStock === 0)
-                throw new BadRequestException(`Wallet does not have sufficient amount of stock '${stock_name}' to sell`);
+            if(walletStock === 0)
+                throw new BadRequestException(`Wallet ${wallet_id} does not have sufficient amount of stock '${stock_name}' to sell`);
 
             await this.walletStockRepository.decrementWalletStock(wallet_id, stock_name, trx);
 
